@@ -4,7 +4,7 @@ import SwiftUI
 
 /// The panel beside a dialog: the folders it can go to, a click each.
 struct JumpView: View {
-    @Bindable var model: FolderModel
+    @ObservedObject var model: FolderModel
     var jump: @MainActor (String) -> Void = { _ in }
     var pin: @MainActor (String) -> Void = { _ in }
     var unpin: @MainActor (String) -> Void = { _ in }
@@ -30,7 +30,6 @@ struct JumpView: View {
                     .padding(.horizontal, 6)
                     .padding(.bottom, 6)
                 }
-                .scrollBounceBehavior(.basedOnSize)
             }
             if let message = model.message {
                 Label(message, systemImage: "exclamationmark.triangle.fill")

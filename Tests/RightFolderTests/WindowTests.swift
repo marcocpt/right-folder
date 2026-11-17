@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 import SwiftUI
-import Testing
+import XCTest
 @testable import FolderCore
 @testable import RightFolder
 
@@ -110,70 +110,69 @@ struct DialogScene: View {
 ///
 ///   SCREENSHOT_DIR=docs swift test --filter "WindowTests"
 @MainActor
-@Suite("Window")
-struct WindowTests {
+final class WindowTests: XCTestCase {
     static let sceneSize = NSSize(width: 880, height: 520)
     static let windowSize = NSSize(width: 760, height: 520)
     static let blue = Color(red: 0.24, green: 0.47, blue: 0.86)
 
-    @Test func rendersThePanelBesideADialog() {
+    func testRendersThePanelBesideADialog() {
         let image = render(DialogScene(model: Gallery.model()), name: "screenshot-light", dark: false, size: Self.sceneSize)
-        #expect(image.pixelsWide >= Int(Self.sceneSize.width))
-        #expect(colors(in: image) > 30)
+        XCTAssert(image.pixelsWide >= Int(Self.sceneSize.width))
+        XCTAssert(colors(in: image) > 30)
     }
 
-    @Test func rendersInDarkMode() {
-        #expect(colors(in: render(DialogScene(model: Gallery.model()), name: "screenshot-dark", dark: true, size: Self.sceneSize)) > 20)
+    func testRendersInDarkMode() {
+        XCTAssert(colors(in: render(DialogScene(model: Gallery.model()), name: "screenshot-dark", dark: true, size: Self.sceneSize)) > 20)
     }
 
-    @Test func rendersTheWindow() {
+    func testRendersTheWindow() {
         let model = Gallery.model(dialog: nil)
         model.setExcluded("com.example.sketchbook", true)
         let view = FolderWindowView(model: model, appName: { _ in "Sketchbook" }, tint: Self.blue)
-        #expect(colors(in: render(view, name: "screenshot-window", dark: false, size: Self.windowSize)) > 20)
+        XCTAssert(colors(in: render(view, name: "screenshot-window", dark: false, size: Self.windowSize)) > 20)
     }
 
-    @Test func rendersTheAccessibilityRequest() {
+    func testRendersTheAccessibilityRequest() {
         let view = FolderWindowView(model: Gallery.model(trusted: false, finder: [], favorites: [], recents: [], dialog: nil), tint: Self.blue)
-        #expect(colors(in: render(view, name: "screenshot-access", dark: false, size: NSSize(width: 760, height: 460))) > 8)
+        XCTAssert(colors(in: render(view, name: "screenshot-access", dark: false, size: NSSize(width: 760, height: 460))) > 8)
     }
 
-    @Test func rendersTheOtherStates() async {
+    func testRendersTheOtherStates() async {
         // Nothing to list yet, a jump that failed and an unplugged drive.
         let empty = Gallery.model(finder: [], favorites: [], recents: [])
-        #expect(colors(in: render(JumpView(model: empty), name: nil, dark: true, size: NSSize(width: 268, height: 160))) > 4)
+        XCTAssert(colors(in: render(JumpView(model: empty), name: nil, dark: true, size: NSSize(width: 268, height: 160))) > 4)
         let jumps = RecordedJumps()
         jumps.result = .failed(.noField)
         let failed = Gallery.model(favorites: ["/Volumes/Old Drive/Photos"], jumps: jumps)
         await failed.jump(to: Gallery.finder[0])
-        #expect(failed.message != nil)
-        #expect(colors(in: render(JumpView(model: failed), name: nil, dark: false, size: NSSize(width: 268, height: 420))) > 8)
+        XCTAssert(failed.message != nil)
+        XCTAssert(colors(in: render(JumpView(model: failed), name: nil, dark: false, size: NSSize(width: 268, height: 420))) > 8)
     }
 
-    @Test func thePanelFitsItsList() {
+    func testThePanelFitsItsList() {
         // The panel's height follows how many folders it lists, up to its limit.
         let host = NSHostingView(rootView: JumpView(model: Gallery.model()))
         let short = NSHostingView(rootView: JumpView(model: Gallery.model(finder: [], favorites: [], recents: [Gallery.home + "/Desktop"])))
-        #expect(host.fittingSize.width == JumpView.width)
-        #expect(host.fittingSize.height > short.fittingSize.height)
-        #expect(short.fittingSize.height > 60)
+        XCTAssert(host.fittingSize.width == JumpView.width)
+        XCTAssert(host.fittingSize.height > short.fittingSize.height)
+        XCTAssert(short.fittingSize.height > 60)
     }
 
-    @Test func everySymbolExists() {
+    func testEverySymbolExists() {
         var names = ["arrowshape.turn.up.right", "folder", "ellipsis.circle", "pin", "pin.fill", "macwindow", "exclamationmark.triangle.fill",
                      "hand.raised.fill", "plus", "chevron.up", "chevron.down", "xmark", "folder.fill", "doc.text", "chevron.up.chevron.down"]
         names += [FolderInfo.Place.home, .desktop, .documents, .downloads, .iCloud, .volume, .network, .folder].map(JumpView.symbol)
         for symbol in names {
-            #expect(NSImage(systemSymbolName: symbol, accessibilityDescription: nil) != nil, "Missing symbol \(symbol)")
+            XCTAssert(NSImage(systemSymbolName: symbol, accessibilityDescription: nil) != nil, "Missing symbol \(symbol)")
         }
     }
 
-    @Test func theMenuBarIconIsATemplate() {
+    func testTheMenuBarIconIsATemplate() {
         for (alert, paused) in [(false, false), (true, false), (false, true)] {
             let image = StatusIcon.image(alert: alert, paused: paused)
-            #expect(image.isTemplate && image.size == NSSize(width: 18, height: 18))
-            #expect(image.cgImage(forProposedRect: nil, context: nil, hints: nil) != nil)
-            #expect(image.accessibilityDescription?.hasPrefix("Right Folder") == true)
+            XCTAssert(image.isTemplate && image.size == NSSize(width: 18, height: 18))
+            XCTAssert(image.cgImage(forProposedRect: nil, context: nil, hints: nil) != nil)
+            XCTAssert(image.accessibilityDescription?.hasPrefix("Right Folder") == true)
         }
     }
 

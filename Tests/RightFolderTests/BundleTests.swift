@@ -1,77 +1,75 @@
 import AppKit
 import Foundation
-import Testing
+import XCTest
 @testable import FolderCore
 @testable import RightFolder
 
 /// Real Open and Save panels, made in this test process and never shown, read through AppKit's
 /// own accessibility methods: the same role, subrole and identifier another app sees.
 @MainActor
-@Suite("Real panels")
-struct RealPanelTests {
+final class RealPanelTests: XCTestCase {
     private func element(_ window: NSWindow) -> Element {
         Element(role: window.accessibilityRole()?.rawValue, subrole: window.accessibilitySubrole()?.rawValue, identifier: window.accessibilityIdentifier())
     }
 
-    @Test func savePanel() {
+    func testSavePanel() {
         let panel = NSSavePanel()
-        #expect(!panel.isVisible)
-        #expect(Dialogs.kind(of: element(panel)) == .save)
+        XCTAssert(!panel.isVisible)
+        XCTAssert(Dialogs.kind(of: element(panel)) == .save)
     }
 
-    @Test func openPanel() {
+    func testOpenPanel() {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true
-        #expect(!panel.isVisible)
-        #expect(Dialogs.kind(of: element(panel)) == .open)
+        XCTAssert(!panel.isVisible)
+        XCTAssert(Dialogs.kind(of: element(panel)) == .open)
     }
 
-    @Test func otherPanelsArentDialogs() {
+    func testOtherPanelsArentDialogs() {
         for window in [NSAlert().window, NSPanel(), NSWindow()] {
-            #expect(Dialogs.kind(of: element(window)) == nil)
+            XCTAssert(Dialogs.kind(of: element(window)) == nil)
         }
     }
 
-    @Test func aWindowShowingAFolderNamesIt() {
+    func testAWindowShowingAFolderNamesIt() {
         // Finder's windows say which folder they show the same way: the window's represented URL.
         let window = NSWindow(contentRect: .zero, styleMask: [.titled], backing: .buffered, defer: true)
         window.representedURL = URL(fileURLWithPath: "/Users/robin/Documents", isDirectory: true)
         let document = window.accessibilityDocument()
-        #expect(document.flatMap(Paths.fromFileURL) == "/Users/robin/Documents")
-        #expect(!window.isVisible)
+        XCTAssert(document.flatMap(Paths.fromFileURL) == "/Users/robin/Documents")
+        XCTAssert(!window.isVisible)
     }
 
-    @Test func keyboardLayoutHasAG() {
+    func testKeyboardLayoutHasAG() {
         // Whatever layout this Mac uses, some key types g, or the US one is used.
-        #expect(KeyLayout.keyCode(for: "g", in: Keyboard.table()) != nil)
-        #expect(KeyLayout.keyCode(for: "j", in: Keyboard.table()) != nil || KeyLayout.ansi["j"] != nil)
+        XCTAssert(KeyLayout.keyCode(for: "g", in: Keyboard.table()) != nil)
+        XCTAssert(KeyLayout.keyCode(for: "j", in: Keyboard.table()) != nil || KeyLayout.ansi["j"] != nil)
     }
 }
 
 /// The app's bundle settings and signing, checked against what the docs promise.
-@Suite("Bundle")
-struct BundleTests {
+final class BundleTests: XCTestCase {
     static let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
-    @Test func aMenuBarAppWithItsOwnID() throws {
-        let info = try #require(NSDictionary(contentsOf: Self.root.appendingPathComponent("Resources/Info.plist")) as? [String: Any])
-        #expect(info["CFBundleIdentifier"] as? String == "com.stanczykwyatt.RightFolder")
-        #expect(info["LSUIElement"] as? Bool == true)
-        #expect(info["CFBundleShortVersionString"] as? String == Describe.version)
-        #expect(info["LSMinimumSystemVersion"] as? String == "14.0")
+    func testAMenuBarAppWithItsOwnID() throws {
+        let info = try XCTUnwrap(NSDictionary(contentsOf: Self.root.appendingPathComponent("Resources/Info.plist")) as? [String: Any])
+        XCTAssert(info["CFBundleIdentifier"] as? String == "com.stanczykwyatt.RightFolder")
+        XCTAssert(info["LSUIElement"] as? Bool == true)
+        XCTAssert(info["CFBundleShortVersionString"] as? String == Describe.version)
+        XCTAssert(info["LSMinimumSystemVersion"] as? String == "14.0")
         // It never sends Apple Events, so it has no reason to ask to.
-        #expect(info["NSAppleEventsUsageDescription"] == nil)
+        XCTAssert(info["NSAppleEventsUsageDescription"] == nil)
     }
 
-    @Test func noEntitlementsAndTheDefaultSignature() throws {
+    func testNoEntitlementsAndTheDefaultSignature() throws {
         // Accessibility is the only permission, and it needs no entitlement. The build signs with
         // the hardened runtime and macOS's default requirement, never one that trusts the bundle ID alone.
         let resources = try FileManager.default.contentsOfDirectory(atPath: Self.root.appendingPathComponent("Resources").path)
-        #expect(!resources.contains { $0.hasSuffix(".entitlements") })
+        XCTAssert(!resources.contains { $0.hasSuffix(".entitlements") })
         let script = try String(contentsOf: Self.root.appendingPathComponent("scripts/build-app.sh"), encoding: .utf8)
-        #expect(script.contains("--options runtime"))
-        #expect(!script.contains("--entitlements"))
-        #expect(!script.contains("--requirements"))
-        #expect(!script.contains("designated =>"))
+        XCTAssert(script.contains("--options runtime"))
+        XCTAssert(!script.contains("--entitlements"))
+        XCTAssert(!script.contains("--requirements"))
+        XCTAssert(!script.contains("designated =>"))
     }
 }

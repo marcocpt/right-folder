@@ -1,12 +1,11 @@
 import Foundation
 import FolderCore
-import Observation
+import Combine
 
 /// What the panel, the menu and the window show, and what clicking a folder does. A dialog only
 /// ever moves when you click a folder or press the shortcut.
 @MainActor
-@Observable
-final class FolderModel {
+final class FolderModel: ObservableObject {
     /// The dialog that's open, as the panel describes it. `id` changes whenever a different
     /// dialog opens, even one that looks the same, like the next Save sheet in the same app.
     struct Dialog: Equatable {
@@ -16,30 +15,30 @@ final class FolderModel {
         var id = 0
     }
 
-    @ObservationIgnored let preferences: Preferences
-    @ObservationIgnored let finder: any FinderSource
-    @ObservationIgnored let system: any FolderSystem
-    @ObservationIgnored var isTrusted: () -> Bool
+    let preferences: Preferences
+    let finder: any FinderSource
+    let system: any FolderSystem
+    var isTrusted: () -> Bool
     /// Carries out a jump on the dialog that's open. Tests record jumps instead.
-    @ObservationIgnored var jumper: (String) async -> JumpResult = { _ in .failed(.dialogGone) }
-    @ObservationIgnored private var cycler = Cycler()
+    var jumper: (String) async -> JumpResult = { _ in .failed(.dialogGone) }
+    private var cycler = Cycler()
     /// Counts dialogs, so a jump that finishes after its dialog closed can't touch the next one.
-    @ObservationIgnored private var generation = 0
+    private var generation = 0
     /// The folders open in Finder when it last looked.
-    @ObservationIgnored private var finderFolders: [String] = []
+    private var finderFolders: [String] = []
 
-    private(set) var trusted = false
-    private(set) var dialog: Dialog?
-    private(set) var list = FolderList()
-    private(set) var favorites: Favorites
-    private(set) var recents: RecentFolders
+    @Published private(set) var trusted = false
+    @Published private(set) var dialog: Dialog?
+    @Published private(set) var list = FolderList()
+    @Published private(set) var favorites: Favorites
+    @Published private(set) var recents: RecentFolders
     /// The folder a jump is on its way to.
-    private(set) var jumping: String?
+    @Published private(set) var jumping: String?
     /// What went wrong with the last jump, shown in the panel until the next one.
-    private(set) var message: String?
-    private(set) var paused: Bool
-    private(set) var remembersRecents: Bool
-    private(set) var excludedApps: Set<String>
+    @Published private(set) var message: String?
+    @Published private(set) var paused: Bool
+    @Published private(set) var remembersRecents: Bool
+    @Published private(set) var excludedApps: Set<String>
 
     init(preferences: Preferences = Preferences(), finder: any FinderSource = FinderWindows(), system: any FolderSystem = LiveFolderSystem(), isTrusted: @escaping () -> Bool) {
         self.preferences = preferences

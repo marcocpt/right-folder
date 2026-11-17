@@ -48,6 +48,7 @@ struct LiveChecker: FolderChecking {
 }
 
 struct LiveFolderSystem: FolderSystem {
+    nonisolated init() {}
     var checker: any FolderChecking { LiveChecker(mounts: Self.mounts()) }
 
     func context() -> PathContext {

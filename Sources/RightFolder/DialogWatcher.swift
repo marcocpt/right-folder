@@ -45,7 +45,7 @@ final class DialogWatcher {
     func start() {
         guard activation == nil else { return }
         activation = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.watchFrontApp() }
+            assumeMainActor { self?.watchFrontApp() }
         }
         watchFrontApp()
     }
@@ -62,7 +62,7 @@ final class DialogWatcher {
         guard !pending else { return }
         pending = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
-            MainActor.assumeIsolated {
+            assumeMainActor {
                 self?.pending = false
                 self?.check()
             }
@@ -88,7 +88,7 @@ final class DialogWatcher {
         guard AXObserverCreate(pid, { _, element, notification, refcon in
             guard let refcon else { return }
             let watcher = Unmanaged<DialogWatcher>.fromOpaque(refcon).takeUnretainedValue()
-            MainActor.assumeIsolated { watcher.scheduleCheck() }
+            assumeMainActor { watcher.scheduleCheck() }
             _ = element
             _ = notification
         }, &created) == .success, let created else { return }
@@ -157,7 +157,7 @@ final class DialogWatcher {
         // While a dialog is up, look again now and then, in case it moved without saying so.
         if new != nil, timer == nil {
             let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in
-                MainActor.assumeIsolated { self?.check() }
+                assumeMainActor { self?.check() }
             }
             timer.tolerance = 0.3
             RunLoop.main.add(timer, forMode: .common)

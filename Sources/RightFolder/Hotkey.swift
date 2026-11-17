@@ -43,7 +43,7 @@ final class Hotkey {
             let status = GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &id)
             guard status == noErr, id.signature == Hotkey.signature else { return OSStatus(eventNotHandledErr) }
             let hotkey = Unmanaged<Hotkey>.fromOpaque(refcon).takeUnretainedValue()
-            MainActor.assumeIsolated { hotkey.onPress?(id.id == 2) }
+            assumeMainActor { hotkey.onPress?(id.id == 2) }
             return noErr
         }, 1, &type, refcon, &handler)
     }

@@ -17,7 +17,7 @@ enum AX {
 
     /// Set when an app didn't answer in time, so a chain of requests can stop at the first one
     /// instead of waiting out each in turn. Only touched on the main thread.
-    nonisolated(unsafe) static var timedOut = false
+    static var timedOut = false
 
     static func attribute(_ element: AXUIElement, _ name: String) -> CFTypeRef? {
         // Elements read from an app don't share its timeout, so each gets its own.

@@ -12,6 +12,7 @@ protocol FinderSource {
 /// "document": the same folder its title bar icon stands for. Only that is read: not the window's
 /// title, what's selected, or what's in the folder.
 struct FinderWindows: FinderSource {
+    nonisolated init() {}
     func folders() -> [String] {
         guard AXIsProcessTrusted(),
               let finder = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.finder").first else { return [] }

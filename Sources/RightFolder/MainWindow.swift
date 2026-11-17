@@ -5,7 +5,7 @@ import SwiftUI
 /// The main window: whether it's ready, your favorites to reorder and remove, recent folders, and
 /// the apps you've turned it off in.
 struct FolderWindowView: View {
-    @Bindable var model: FolderModel
+    @ObservedObject var model: FolderModel
     var allow: @MainActor () -> Void = {}
     var addFavorite: @MainActor () -> Void = {}
     var appName: @MainActor (String) -> String = { $0 }
@@ -229,7 +229,7 @@ final class FolderWindowController: NSObject, NSWindowDelegate {
     func show() {
         let window = self.window ?? makeWindow()
         self.window = window
-        NSApp.activate()
+        NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
 

@@ -1,15 +1,14 @@
 import Foundation
-import Testing
+import XCTest
 @testable import FolderCore
 @testable import RightFolder
 
 /// The real folder checks, on a throwaway folder of made-up folders and links.
 @MainActor
-@Suite("Folder checks")
-struct FolderSystemTests {
-    let root: String
+final class FolderSystemTests: XCTestCase {
+    var root: String!
 
-    init() throws {
+    override func setUpWithError() throws {
         root = FileManager.default.temporaryDirectory.appendingPathComponent("RightFolderTests-\(UUID().uuidString)").path
         let files = FileManager.default
         try files.createDirectory(atPath: root + "/Thesis/Figures", withIntermediateDirectories: true)
@@ -27,42 +26,42 @@ struct FolderSystemTests {
 
     var checker: LiveChecker { LiveChecker(mounts: LiveFolderSystem.mounts()) }
 
-    @Test func foldersAndFiles() {
-        #expect(checker.isFolder(root))
-        #expect(checker.isFolder(root + "/Thesis/Figures"))
-        #expect(!checker.isFolder(root + "/notes.md"))
-        #expect(!checker.isFolder(root + "/Missing"))
-        #expect(checker.isFolder("/"))
+    func testFoldersAndFiles() {
+        XCTAssert(checker.isFolder(root))
+        XCTAssert(checker.isFolder(root + "/Thesis/Figures"))
+        XCTAssert(!checker.isFolder(root + "/notes.md"))
+        XCTAssert(!checker.isFolder(root + "/Missing"))
+        XCTAssert(checker.isFolder("/"))
     }
 
-    @Test func followsLocalLinks() {
-        #expect(checker.isFolder(root + "/thesis-link"))
-        #expect(checker.isFolder(root + "/thesis-link/Figures"))
-        #expect(checker.isFolder(root + "/absolute-link"))
-        #expect(!checker.isFolder(root + "/file-link"))
-        #expect(!checker.isFolder(root + "/dangling"))
-        #expect(!checker.isFolder(root + "/loop-a"))
+    func testFollowsLocalLinks() {
+        XCTAssert(checker.isFolder(root + "/thesis-link"))
+        XCTAssert(checker.isFolder(root + "/thesis-link/Figures"))
+        XCTAssert(checker.isFolder(root + "/absolute-link"))
+        XCTAssert(!checker.isFolder(root + "/file-link"))
+        XCTAssert(!checker.isFolder(root + "/dangling"))
+        XCTAssert(!checker.isFolder(root + "/loop-a"))
     }
 
-    @Test func neverLooksThroughLinksOntoServers() {
+    func testNeverLooksThroughLinksOntoServers() {
         // Taken as there without asking, since asking a dead server would hang.
-        #expect(checker.isFolder(root + "/lab-server"))
-        #expect(checker.isFolder(root + "/lab-server/deeper"))
-        #expect(checker.isFolder(root + "/old-share"))
+        XCTAssert(checker.isFolder(root + "/lab-server"))
+        XCTAssert(checker.isFolder(root + "/lab-server/deeper"))
+        XCTAssert(checker.isFolder(root + "/old-share"))
     }
 
-    @Test func mountsAndBookmarks() {
+    func testMountsAndBookmarks() {
         let system = LiveFolderSystem()
         let mounts = LiveFolderSystem.mounts()
-        #expect(mounts.contains { $0.path == "/" && $0.isLocal })
-        #expect(system.bookmark(for: root + "/Thesis") != nil)
+        XCTAssert(mounts.contains { $0.path == "/" && $0.isLocal })
+        XCTAssert(system.bookmark(for: root + "/Thesis") != nil)
         // No bookmark is made for a folder on a server, or under /Volumes with nothing mounted.
-        #expect(system.bookmark(for: "/net/lab-server-that-does-not-exist") == nil)
-        #expect(system.bookmark(for: "/Volumes/RightFolderTests Share/data") == nil)
+        XCTAssert(system.bookmark(for: "/net/lab-server-that-does-not-exist") == nil)
+        XCTAssert(system.bookmark(for: "/Volumes/RightFolderTests Share/data") == nil)
         // A bookmark follows its folder when it's renamed.
         let bookmark = system.bookmark(for: root + "/Thesis/Figures")
         try? FileManager.default.moveItem(atPath: root + "/Thesis/Figures", toPath: root + "/Thesis/Plots")
         let resolved = system.resolve(Favorite(path: root + "/Thesis/Figures", bookmark: bookmark))
-        #expect(resolved.map { Paths.normalize($0.path) ?? "" }?.hasSuffix("/Thesis/Plots") == true)
+        XCTAssert(resolved.map { Paths.normalize($0.path) ?? "" }?.hasSuffix("/Thesis/Plots") == true)
     }
 }

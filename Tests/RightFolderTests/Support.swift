@@ -32,7 +32,7 @@ final class FakeSystem: FolderSystem {
     var home: String
     var moved: [String: String] = [:]
 
-    init(home: String = Gallery.home, folders: Set<String> = Gallery.folders, mounts: [Mount] = Gallery.mounts) {
+    nonisolated init(home: String = Gallery.home, folders: Set<String> = Gallery.folders, mounts: [Mount] = Gallery.mounts) {
         self.home = home
         self.folders = folders
         self.mounts = mounts
@@ -51,6 +51,7 @@ final class FakeSystem: FolderSystem {
 /// Records jumps instead of making them. Nothing real is ever sent a key in a test.
 @MainActor
 final class RecordedJumps {
+    nonisolated init() {}
     var paths: [String] = []
     var result: JumpResult = .done
     /// How long each jump takes, for testing what happens meanwhile.

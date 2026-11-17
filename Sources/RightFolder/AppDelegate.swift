@@ -119,7 +119,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Status
     private func watchTrust() {
         guard trustTimer == nil, !model.trusted else { return }
         let timer = Timer(timeInterval: 2, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.trustChanged() }
+            assumeMainActor { self?.trustChanged() }
         }
         RunLoop.main.add(timer, forMode: .common)
         trustTimer = timer
@@ -160,7 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Status
         picker.allowsMultipleSelection = true
         picker.prompt = "Pin"
         picker.message = "Choose folders to add to your favorites."
-        NSApp.activate()
+        NSApp.activate(ignoringOtherApps: true)
         guard picker.runModal() == .OK else { return }
         for url in picker.urls { model.pin(url.path(percentEncoded: false)) }
     }
@@ -198,7 +198,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, Status
     }
 
     func showAbout() {
-        NSApp.activate()
+        NSApp.activate(ignoringOtherApps: true)
         NSApp.orderFrontStandardAboutPanel(options: [
             .credits: NSAttributedString(
                 string: "Free and open source. No internet access.\ngithub.com/stanczykwyatt/right-folder",

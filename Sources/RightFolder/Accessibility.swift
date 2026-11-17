@@ -24,7 +24,7 @@ enum Accessibility {
         DistributedNotificationCenter.default().addObserver(forName: NSNotification.Name("com.apple.accessibility.api"), object: nil, queue: .main) { _ in
             // The setting takes a moment to apply after the notification.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                MainActor.assumeIsolated { changed() }
+                assumeMainActor { changed() }
             }
         }
     }

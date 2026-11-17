@@ -1,5 +1,5 @@
 import Foundation
-import Testing
+import XCTest
 @testable import FolderCore
 
 /// A made-up dialog that acts out what a real one might: Go to Folder opening after a delay, or
@@ -95,173 +95,192 @@ final class FakeDialog: DialogDriver {
 }
 
 @MainActor
-@Suite("Jumping")
-struct JumperTests {
+final class JumperTests: XCTestCase {
     let home = "/Users/robin"
     let path = "/Users/robin/Documents/Thesis"
 
-    @Test func theUsualWay() async {
+    func testTheUsualWay() async {
         let dialog = FakeDialog()
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .done)
-        #expect(dialog.events == [.goToFolder, .set(path + "/", in: "go"), .returnKey])
+        let __result0 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result0 == .done)
+        XCTAssert(dialog.events == [.goToFolder, .set(path + "/", in: "go"), .returnKey])
     }
 
-    @Test func aFieldThatTidiesThePathStillCounts() async {
+    func testAFieldThatTidiesThePathStillCounts() async {
         let dialog = FakeDialog()
-        dialog.readBack = { "~" + $0.dropFirst(home.count) }
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .done)
-        #expect(!dialog.events.contains { if case .typed = $0 { true } else { false } })
+        dialog.readBack = { "~" + $0.dropFirst(self.home.count) }
+        let __result1 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result1 == .done)
+        XCTAssert(!dialog.events.contains { if case .typed = $0 { true } else { false } })
     }
 
-    @Test func typesWhenTheFieldWontTakeAValue() async {
+    func testTypesWhenTheFieldWontTakeAValue() async {
         let dialog = FakeDialog()
         dialog.acceptsValue = false
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .done)
-        #expect(dialog.events == [.goToFolder, .typed(path + "/"), .returnKey])
+        let __result2 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result2 == .done)
+        XCTAssert(dialog.events == [.goToFolder, .typed(path + "/"), .returnKey])
     }
 
-    @Test func typesWhenTheValueDoesntStick() async {
+    func testTypesWhenTheValueDoesntStick() async {
         let dialog = FakeDialog()
         dialog.readBack = { _ in "" }
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .done)
-        #expect(dialog.events == [.goToFolder, .set(path + "/", in: "go"), .set("", in: "go"), .typed(path + "/"), .returnKey])
+        let __result3 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result3 == .done)
+        XCTAssert(dialog.events == [.goToFolder, .set(path + "/", in: "go"), .set("", in: "go"), .typed(path + "/"), .returnKey])
     }
 
-    @Test func typingCanBeChosen() async {
+    func testTypingCanBeChosen() async {
         let dialog = FakeDialog()
-        #expect(await Jumper.jump(to: path, home: home, typing: true, with: dialog) == .done)
-        #expect(dialog.events == [.goToFolder, .set("", in: "go"), .typed(path + "/"), .returnKey])
+        let __result4 = await Jumper.jump(to: path, home: home, typing: true, with: dialog)
+        XCTAssert(__result4 == .done)
+        XCTAssert(dialog.events == [.goToFolder, .set("", in: "go"), .typed(path + "/"), .returnKey])
     }
 
-    @Test func givesUpWhenGoToFolderNeverOpens() async {
+    func testGivesUpWhenGoToFolderNeverOpens() async {
         let dialog = FakeDialog()
         dialog.fieldAfter = nil
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.noField))
+        let __result5 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result5 == .failed(.noField))
         // Nothing but the shortcut was sent: no path, and no Return that could click Save.
-        #expect(dialog.events == [.goToFolder])
+        XCTAssert(dialog.events == [.goToFolder])
     }
 
-    @Test func aSearchFieldIsntGoToFolder() async {
+    func testASearchFieldIsntGoToFolder() async {
         let dialog = FakeDialog()
         dialog.goToField = FakeDialog.Field(name: "search", role: "AXTextField", subrole: "AXSearchField")
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.noField))
-        #expect(dialog.events == [.goToFolder])
+        let __result6 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result6 == .failed(.noField))
+        XCTAssert(dialog.events == [.goToFolder])
     }
 
-    @Test func theNameFieldIsntGoToFolder() async {
+    func testTheNameFieldIsntGoToFolder() async {
         // In a Save dialog the name field already has the keyboard. If it still does after ⇧⌘G,
         // Go to Folder didn't open, and the path must not go into the file name.
         let dialog = FakeDialog()
         dialog.goToField = dialog.focused!
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.noField))
-        #expect(dialog.events == [.goToFolder])
+        let __result7 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result7 == .failed(.noField))
+        XCTAssert(dialog.events == [.goToFolder])
     }
 
-    @Test func stopsWhenItCantTellWhatHadTheKeyboard() async {
+    func testStopsWhenItCantTellWhatHadTheKeyboard() async {
         // Without knowing the field focused before ⇧⌘G, the Save dialog's name field could pass
         // for Go to Folder, and Return there would save. So it doesn't even start.
         let dialog = FakeDialog()
         dialog.focused = nil
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.noField))
-        #expect(dialog.events.isEmpty)
+        let __result8 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result8 == .failed(.noField))
+        XCTAssert(dialog.events.isEmpty)
     }
 
-    @Test func aFieldOutsideTheDialogIsntGoToFolder() async {
+    func testAFieldOutsideTheDialogIsntGoToFolder() async {
         // Focus moved to a text field in the app's document window instead.
         let dialog = FakeDialog()
         dialog.goToField = FakeDialog.Field(name: "document", role: "AXTextField", inDialog: false)
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.noField))
-        #expect(dialog.events == [.goToFolder])
+        let __result9 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result9 == .failed(.noField))
+        XCTAssert(dialog.events == [.goToFolder])
     }
 
-    @Test func aFieldThatTookTheWrongTextStops() async {
+    func testAFieldThatTookTheWrongTextStops() async {
         let dialog = FakeDialog()
         dialog.acceptsValue = false
         dialog.typedReadBack = { String($0.prefix(10)) }
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.pathRejected))
-        #expect(!dialog.events.contains(.returnKey))
+        let __result10 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result10 == .failed(.pathRejected))
+        XCTAssert(!dialog.events.contains(.returnKey))
     }
 
-    @Test func aFieldThatWontSayWhatItHoldsIsTrusted() async {
+    func testAFieldThatWontSayWhatItHoldsIsTrusted() async {
         let dialog = FakeDialog()
         dialog.acceptsValue = false
         dialog.typedReadBack = nil
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .done)
-        #expect(dialog.events.last == .returnKey)
+        let __result11 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result11 == .done)
+        XCTAssert(dialog.events.last == .returnKey)
     }
 
-    @Test func theTimeLimitIsWallClock() async {
+    func testTheTimeLimitIsWallClock() async {
         // Each look at the dialog is slow, so fewer looks fit in the time limit.
         let dialog = FakeDialog()
         dialog.fieldAfter = nil
         var waits = 0
         dialog.onWait = { _, _ in waits += 1 }
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.noField))
-        #expect(waits == Int((GoTo.fieldTimeout / GoTo.pollInterval).rounded()))
+        let __result12 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result12 == .failed(.noField))
+        XCTAssert(waits == Int((GoTo.fieldTimeout / GoTo.pollInterval).rounded()))
     }
 
-    @Test func stopsIfTheDialogClosesWhileWaiting() async {
+    func testStopsIfTheDialogClosesWhileWaiting() async {
         let dialog = FakeDialog()
         dialog.fieldAfter = 5
         dialog.onWait = { dialog, count in if count == 2 { dialog.front = false } }
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.dialogGone))
-        #expect(dialog.events == [.goToFolder])
+        let __result13 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result13 == .failed(.dialogGone))
+        XCTAssert(dialog.events == [.goToFolder])
     }
 
-    @Test func stopsIfTheDialogClosesBeforeReturn() async {
+    func testStopsIfTheDialogClosesBeforeReturn() async {
         let dialog = FakeDialog()
         // Three looks to find the field, then the pause before Return.
         dialog.onWait = { dialog, count in if count == 4 { dialog.front = false } }
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.dialogGone))
-        #expect(dialog.events.count == 2)
-        #expect(!dialog.events.contains(.returnKey))
+        let __result14 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result14 == .failed(.dialogGone))
+        XCTAssert(dialog.events.count == 2)
+        XCTAssert(!dialog.events.contains(.returnKey))
     }
 
-    @Test func neverPressesReturnOutsideTheField() async {
+    func testNeverPressesReturnOutsideTheField() async {
         // Something else takes the keyboard after the path is set: Return would click Save.
         let dialog = FakeDialog()
         dialog.onWait = { dialog, count in if count == 4 { dialog.goToField = FakeDialog.Field(name: "save button", role: "AXButton") } }
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.dialogGone))
-        #expect(dialog.events.count == 2)
-        #expect(!dialog.events.contains(.returnKey))
+        let __result15 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result15 == .failed(.dialogGone))
+        XCTAssert(dialog.events.count == 2)
+        XCTAssert(!dialog.events.contains(.returnKey))
     }
 
-    @Test func neverTypesOutsideTheField() async {
+    func testNeverTypesOutsideTheField() async {
         // The field won't take the path, and by then something else has the keyboard.
         let dialog = FakeDialog()
         dialog.acceptsValue = false
         dialog.onSet = { $0.goToField = FakeDialog.Field(name: "list", role: "AXOutline") }
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.dialogGone))
-        #expect(dialog.events == [.goToFolder])
+        let __result16 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result16 == .failed(.dialogGone))
+        XCTAssert(dialog.events == [.goToFolder])
     }
 
-    @Test func notAllowedWithoutAccessibility() async {
+    func testNotAllowedWithoutAccessibility() async {
         let dialog = FakeDialog()
         dialog.allowed = false
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.notAllowed))
-        #expect(dialog.events.isEmpty)
+        let __result17 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result17 == .failed(.notAllowed))
+        XCTAssert(dialog.events.isEmpty)
     }
 
-    @Test func typesWholeCharacters() {
+    func testTypesWholeCharacters() {
         let path = "/Users/robin/📁 Résumés/日本語のフォルダ/👩🏽‍🔬 lab/"
         let pieces = GoTo.chunks(path, size: 16)
-        #expect(pieces.joined() == path)
-        #expect(pieces.allSatisfy { $0.utf16.count <= 16 || $0.count == 1 })
-        #expect(GoTo.chunks("", size: 16).isEmpty)
+        XCTAssert(pieces.joined() == path)
+        XCTAssert(pieces.allSatisfy { $0.utf16.count <= 16 || $0.count == 1 })
+        XCTAssert(GoTo.chunks("", size: 16).isEmpty)
         // A character longer than a whole piece still goes in one piece of its own.
-        #expect(GoTo.chunks("👩🏽‍🔬", size: 2) == ["👩🏽‍🔬"])
+        XCTAssert(GoTo.chunks("👩🏽‍🔬", size: 2) == ["👩🏽‍🔬"])
     }
 
-    @Test func notStartedWithoutADialog() async {
+    func testNotStartedWithoutADialog() async {
         let dialog = FakeDialog()
         dialog.front = false
-        #expect(await Jumper.jump(to: path, home: home, with: dialog) == .failed(.dialogGone))
-        #expect(dialog.events.isEmpty)
+        let __result18 = await Jumper.jump(to: path, home: home, with: dialog)
+        XCTAssert(__result18 == .failed(.dialogGone))
+        XCTAssert(dialog.events.isEmpty)
     }
 
-    @Test func theRootFolder() async {
+    func testTheRootFolder() async {
         let dialog = FakeDialog()
-        #expect(await Jumper.jump(to: "/", home: home, with: dialog) == .done)
-        #expect(dialog.events[1] == .set("/", in: "go"))
+        let __result19 = await Jumper.jump(to: "/", home: home, with: dialog)
+        XCTAssert(__result19 == .done)
+        XCTAssert(dialog.events[1] == .set("/", in: "go"))
     }
 }
