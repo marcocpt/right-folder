@@ -56,7 +56,8 @@ final class BundleTests: XCTestCase {
         XCTAssert(info["CFBundleIdentifier"] as? String == "com.stanczykwyatt.RightFolder")
         XCTAssert(info["LSUIElement"] as? Bool == true)
         XCTAssert(info["CFBundleShortVersionString"] as? String == Describe.version)
-        XCTAssert(info["LSMinimumSystemVersion"] as? String == "14.0")
+        // Matches Package.swift's .macOS(.v13) deployment target, so the app runs on macOS 13.
+        XCTAssert(info["LSMinimumSystemVersion"] as? String == "13.0")
         // It never sends Apple Events, so it has no reason to ask to.
         XCTAssert(info["NSAppleEventsUsageDescription"] == nil)
     }
