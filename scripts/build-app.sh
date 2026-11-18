@@ -19,7 +19,7 @@ app="build/Right Folder.app"
 # Command Line Tools. Building both in one step needs Xcode.
 binaries=()
 for arch in arm64 x86_64; do
-	triple="$arch-apple-macosx14.0"
+	triple="$arch-apple-macosx13.0"
 	swift build -c release --product RightFolder --triple "$triple"
 	bin="$(swift build -c release --triple "$triple" --show-bin-path)"
 	binaries+=("$bin/RightFolder")
