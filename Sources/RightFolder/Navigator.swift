@@ -75,7 +75,7 @@ final class LiveDialog: DialogDriver {
                 guard let event = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: down) else { return false }
                 event.flags = []
                 chunk.withUnsafeBufferPointer { event.keyboardSetUnicodeString(stringLength: chunk.count, unicodeString: $0.baseAddress) }
-                event.postToPid(dialog.pid)
+                post(event)
             }
         }
         return true
@@ -96,10 +96,39 @@ final class LiveDialog: DialogDriver {
             guard let event = CGEvent(keyboardEventSource: source, virtualKey: key, keyDown: down) else { return false }
             event.flags = flags
             units.withUnsafeBufferPointer { event.keyboardSetUnicodeString(stringLength: units.count, unicodeString: $0.baseAddress) }
-            event.postToPid(dialog.pid)
+            post(event)
         }
         return true
     }
+
+    /// Sends a key to the app showing the dialog. Post to the focused window through the system
+    /// event tap, not `postToPid`: an Open or Save panel can belong to a separate
+    /// "Open and Save Panel Service" process, so targeting the owner's pid misses the panel's
+    /// keyboard focus and shortcuts like ⇧⌘G never reach it. The tap delivers to whichever view
+    /// has the keyboard — which Jumper has already checked is the Go to Folder field inside this
+    /// dialog, in the app it checked is in front. Nothing is sent while that check fails.
+    private func post(_ event: CGEvent) {
+        KeyDelivery.post(event)
+    }
+}
+
+/// How a key reaches the dialog. A thin layer around CGEvent posting so the delivery strategy is
+/// explicit and can be tested without sending real keys.
+///
+/// The keyboard focus of an Open or Save panel can live in a separate "Open and Save Panel
+/// Service" process. Posting to the dialog owner's pid (`postToPid`) misses that focus: modifier
+/// shortcuts such as ⇧⌘G are swallowed and Go to Folder never opens. Posting at the system event
+/// tap delivers to whatever view actually has the keyboard. Callers only get here after Jumper has
+/// confirmed the dialog is in front and, before Return, that the focused field is the dialog's Go
+/// to Folder field, so the key still reaches only the intended place.
+enum KeyDelivery {
+    /// Posts through the system event tap — the only way that reaches an out-of-process panel.
+    static let systemTap: (CGEvent) -> Void = { event in
+        event.post(tap: .cghidEventTap)
+    }
+
+    /// The strategy in use. Tests swap in a recorder; production uses the system tap.
+    static var post: (CGEvent) -> Void = systemTap
 }
 
 /// What each key types on the keyboard layout you're using, so ⇧⌘G and the shortcut use the right
